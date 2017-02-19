@@ -1,0 +1,73 @@
+<html ng-app="usersApp">
+<title>Currency Converter</title>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular.min.js"></script>
+
+
+<body>
+
+<div class="container">
+    <app-root> </app-root>
+</div>
+
+<script>
+    /***
+     Приложение "Список пользователей"
+
+     Написать сервис UserService для получения пользователей по http(https://learn.javascript.ru/courses/groups/api/participants?key=1gvlw0r)
+     Используя сервис из (1) вывести список.
+
+     */
+
+    'use strict';
+
+
+    angular.module('usersApp', []);
+    let app = angular.module('usersApp');
+
+
+    app.service('UserService', function ($http) {
+
+        const URI = `https://learn.javascript.ru/courses/groups/api/participants`;
+        const key = `1gvlw0r`;
+
+        this.getUsers = () => {
+            return $http.get( URI + `?key=${key}` ).then((response) => response.data);
+        };
+
+    });
+
+
+    app.component('appRoot', {
+        template: `
+        <div class="panel panel-info" >
+            <div class="panel-heading"> </div>
+            <div class="panel-body">
+                <div class="row">
+                    <div class=" col-md-9 col-lg-9 ">
+                        <table class="table table-user-information">
+                            <tbody>
+                                <tr ng-repeat="user in $ctrl.users"><td>{{user.firstName + ' ' + user.surname}}</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        <div class="panel-footer">
+        </div>
+        </div>
+`,
+
+        controller: function ( UserService, $http) {
+
+            UserService.getUsers().then((users) => {
+                this.users = users;
+            });
+
+        }
+    });
+
+</script>
+</body>
+</html>
