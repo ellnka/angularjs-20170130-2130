@@ -1,0 +1,156 @@
+<html ng-app="currencyConverterApp">
+<title>Currency Converter</title>
+
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular.min.js"></script>
+
+<style>
+    .currency-converter__loader {
+        border: 5px solid #f3f3f3;
+        border-radius: 50%;
+        border-top: 5px solid blue;
+        border-bottom: 5px solid blue;
+        width: 25px;
+        height: 25px;
+        -webkit-animation: spin 2s linear infinite;
+        animation: spin 2s linear infinite;
+        margin: 5px 0;
+    }
+
+    @-webkit-keyframes spin {
+        0% { -webkit-transform: rotate(0deg); }
+        100% { -webkit-transform: rotate(360deg); }
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .currency-converter__arrow {
+        color: #fff;
+        font-size: 1.5rem;
+        padding-left: .3125rem;
+        padding-right: .3125rem;
+    }
+</style>
+
+<body>
+
+<div class="container">
+    <app-root> </app-root>
+</div>
+
+<script>
+    /***
+     Приложение "конвертер валют"
+
+     Сделать виджет компонент "конвертер валют" CurrencyConverter
+     Написать сервис CurrencyConverterSerivce, с логикой конвертации.
+     Подключить сервис для получения курсов валют (http запрос)
+
+     */
+
+    'use strict';
+
+
+    angular.module('currencyConverterApp', []);
+    let app = angular.module('currencyConverterApp');
+
+
+    app.service('CurrencyConverterService', function ($http) {
+
+        const URI = `http://api.fixer.io/latest`;
+
+        this.getCurrencies = (base) => {
+            return $http.get( URI +  `?base=${base}` ).then((response) => response.data);
+        };
+
+        this.convert = (leftValue, leftRate, rightRate) => {
+            return leftRate && Math.round(leftValue * (1/leftRate)* (rightRate)*100) / 100;
+        };
+    });
+
+
+
+    app.component('appRoot', {
+        template: `
+        <div class="panel m-2">
+            <h4> Currency Converter</h4>
+            <div class="row list-group-item" placeholder="Select currency...">
+                <div class="col-sm-2">
+                    <input ng-model="$ctrl.leftValue" type="text" class="form-control" ng-change="$ctrl.convert()">
+                </div>
+                <div class="col-sm-2">
+                    <select ng-model="$ctrl.leftRate" class="form-control" ng-change="$ctrl.convert()">
+                        <option value="1" selected>USD</option>
+                        <option ng-repeat="(key, value) in $ctrl.currencies.rates" value="{{value}}">{{key}}</option>
+                    </select>
+                </div>
+
+                <div class="col-sm-1">
+                    <div ng-if="$ctrl.loading" class="currency-converter__loader"></div>
+                    <div ng-if="!$ctrl.loading" style="margin:5px 0;">
+                        <button ng-click="$ctrl.swapRates()" type="button"
+                                class="btn btn-info btn-xs currency-converter__arrow"> &#8596; </button>
+                    </div>
+                </div>
+
+                <div class="col-sm-2">
+                    <input ng-model="$ctrl.rightValue" type="text" class="form-control" ng-change="$ctrl.convert()">
+                </div>
+                <div class="col-sm-2">
+                    <select ng-model="$ctrl.rightRate" class="form-control" ng-change="$ctrl.convert()">
+                        <option value="1" selected>USD</option>
+                        <option ng-repeat="(key, value) in $ctrl.currencies.rates" value="{{value}}">{{key}}</option>
+                    </select>
+                </div>
+
+                <div class="col-sm-3"></div>
+            </div>
+        </div>
+
+`,
+
+        controller: function ( CurrencyConverterService, $http, $timeout) {
+            this.leftValue = 1;
+            this.leftRate = 1;
+            this.rightValue = 0;
+            this.rightRate = 0;
+            this.base = 'USD';
+
+            this.loading = false;
+
+            this.getRates = () => {
+                this.loading = true;
+
+                CurrencyConverterService.getCurrencies(this.base).then( (data) => {
+                    this.currencies = angular.fromJson(data);
+                    this.loading = false;
+                });
+
+            };
+
+            this.convert = () => {
+                this.rightValue = CurrencyConverterService.convert(this.leftValue, this.leftRate, this.rightRate);
+            };
+
+            this.swapRates = () => {
+                let tempRate = this.leftRate;
+                this.leftRate = this.rightRate;
+                this.rightRate = tempRate;
+                this.rightValue = CurrencyConverterService.convert(this.leftValue, this.leftRate, this.rightRate);
+            };
+
+
+            this.$onInit = () => {
+                this.getRates();
+            };
+
+
+        }
+    });
+
+</script>
+</body>
+</html>
