@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html ng-app="usersApp">
+
+<head>
+    <meta charset="UTF-8">
+    <title>List of Users</title>
+    <script>document.write('<base href="' + document.location + '" />');</script>
+
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" rel="stylesheet">
+    <link href="style.css" rel="stylesheet">
+
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.1/angular.min.js"></script>
+    <script src="//unpkg.com/angular-ui-router/release/angular-ui-router.min.js"></script>
+
+</head>
+
+<body>
+<div class="container">
+    <div class="list-group list-group-horizontal">
+        <a ui-sref="home" class="list-group-item"><span class="glyphicon glyphicon-home"></span>  Home </a>
+        <a ui-sref="list" class="list-group-item"><span class="glyphicon glyphicon-list-alt"></span>  Users </a>
+        <a ui-sref="login" class="list-group-item"><span class="glyphicon glyphicon-off"></span>  Login </a>
+    </div>
+</div>
+
+<div class="container">
+    <ui-view></ui-view>
+</div>
+    <script>
+        /***
+
+         Приложение "Список пользователей"
+
+         Расширить приложение: сделать возможность переходить на конкретного пользователя(по ID).
+         Асинхронно подгружать данные пользователей через resolve
+         Сделать страницу логина (отдельный стейт)
+         Написать сервис UserService для получения пользователей по http(https://learn.javascript.ru/courses/groups/api/participants?key=1gvlw0r)
+         Используя сервис из (1) вывести список.
+
+         ***/
+
+        'use strict';
+
+        angular.module('usersApp', ['ui.router']);
+        let app = angular.module('usersApp');
+
+        app.config(($stateProvider, $urlRouterProvider) => {
+
+            $stateProvider.state({
+                name: 'home',
+                url: '/',
+                template: '<h3> Hello world!</h3>'
+            });
+
+
+            $stateProvider.state({
+                name: 'list',
+                url: '/user-list',
+                template: '<user-list users="users"></user-list>',
+
+                resolve: {
+                    users: function (UserService) {
+                        return UserService.getUsers().then((data) => {
+                            return data
+                        });
+                    }
+                },
+
+                controller: function ($scope, $stateParams, users) {
+                    $scope.users = users;
+                }
+            });
+
+
+            $stateProvider.state({
+                name: 'userCard',
+                url: '/user-card/:userId',
+                template: '<user-card user-id="userId" user="user"></user-card>',
+                resolve: {
+                    user: function (UserService, $stateParams) {
+                        return UserService.getUserById($stateParams.userId);
+                    }
+                },
+
+                controller: function ($scope, $stateParams, user) {
+                    $scope.userId = $stateParams.userId;
+                    $scope.user = user;
+                }
+            });
+
+            $stateProvider.state({
+                name: '404',
+                url: '/404',
+                template: '<h3> Page not found </h3>'
+            });
+
+            $stateProvider.state({
+                name: 'login',
+                url: '/login',
+                template: '<login></login>'
+            });
+
+            $urlRouterProvider.otherwise('/');
+
+
+        });
+
+        app.service('UserService', function ($http) {
+
+            const URI = `https://learn.javascript.ru/courses/groups/api/participants?key=1gvlw0r`;
+
+            this.usersPromise = $http.get(URI).then((response) => {
+                let users = response.data;
+
+                for (let i = 0; i < users.length; i++) {
+                    users[i].id = i;
+                }
+                this.users = users;
+                return users;
+            });
+
+
+            this.getUsers = () => {
+                return this.usersPromise;
+            };
+
+            this.getUserById = (userId) => {
+                return this.usersPromise.then((users) => {
+                    for (let i = 0; i < this.users.length; i++) {
+                        if (users[i].id * 1.0 === userId * 1.0) {
+                            return users[i];
+                        }
+                    }
+                });
+
+            };
+
+        });
+
+        app.component('userList', {
+            bindings: {
+                users: '<'
+            },
+            templateUrl: 'user-list.html'
+
+        });
+
+        app.component('userCard', {
+            bindings: {
+                userId: '<',
+                user: '<'
+            },
+            templateUrl: 'user-card.html',
+
+            controller: function() {
+                this.defaultPhoto = "https://lh5.googleusercontent.com/-b0-k99FZlyE/AAAAAAAAAAI/AAAAAAAAAAA/eu7opA4byxI/photo.jpg?sz=100";
+                this.countries = {
+                    'ru': 'Russia',
+                    'ua': 'Ukraine',
+                    'ca': 'Canada'
+                }
+            }
+        });
+
+        app.component('login', {
+            templateUrl: 'login.html'
+
+        });
+
+
+    </script>
+
+
+
+
+</body>
+
+</html>
